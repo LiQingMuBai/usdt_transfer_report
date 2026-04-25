@@ -1,77 +1,98 @@
-# print_report
+# print_transfer_report
 
-Generate a daily summary Excel report from `resource-orders.csv`.
+A small Rust CLI that reads a blockchain transfer export CSV (`Transfers.csv`), converts timestamps from **UTC to Beijing Time (UTC+8)**, aggregates transfers **by day (BJT)**, and exports an **Excel (.xlsx)** report with a **dark-themed column chart**.
 
-The program:
-- Groups data by **Dispatch Time** (derived from `Delegation Time (UTC+8)` date).
-- Excludes **today** (UTC+8) from the summary.
-- Produces an `.xlsx` with:
-  - A summary table (per day + a total row).
-  - A column chart (dark color palette).
-- Shows a terminal progress UI while running.
+## Input CSV
 
-## Input
+The tool expects a CSV file with headers like:
 
-Expected CSV headers (minimum required):
-- `Delegation Time (UTC+8)`
-- `Resource Quantity`
+- `Txn Hash`
+- `Block`
+- `Time(UTC)`
+- `From`
+- `To`
+- `Token`
+- `Token Symbol`
+- `Amount/TokenID`
+- `Result`
+- `Status`
 
-## Mapping Rules
+## Quick Start
 
-`Resource Quantity` is mapped into two types:
-- `65000` → **With-U Energy Trades** (有U能量笔数) = 1 trade
-- `131000` → **No-U Energy Trades** (无U能量笔数) = 1 trade
+```bash
+cd /Users/masion/monitor/print_transfer_report
+cargo run -- --summary-only --xlsx
+```
 
-In the Excel output:
-- **无U能量笔数** is displayed as **(No-U trades × 2)** as requested.
-- **每日转账次数** (Daily transfer count) = With-U trades + No-U trades (trade count basis).
+This reads configuration from `.env` (see below), prints the daily summary to stdout, and writes the Excel report to the configured output path.
 
 ## Configuration (.env)
 
-Create a `.env` file in this folder (or copy from `.env.example`):
+Create a `.env` file in the project root (you can copy from `.env.example`).
 
-```bash
-cp .env.example .env
+Required:
+
+- `CSV_PATH`: absolute path to `Transfers.csv`
+- `XLSX_PATH`: output `.xlsx` file path (including filename)
+
+Range:
+
+- `RANGE_DAYS`: number of days to include (integer > 0). If not set, all days are included.
+
+Defaults / behavior:
+
+- The report **excludes “today” (Beijing date)** by default, to avoid partial-day data.
+
+Example:
+
+```ini
+CSV_PATH=/Users/masion/Desktop/Transfers.csv
+XLSX_PATH=/Users/masion/monitor/print_transfer_report/transfer_daily_summary.xlsx
+RANGE_DAYS=40
 ```
 
-Available keys:
+## CLI Options
 
-```env
-INPUT_CSV=/Users/masion/Desktop/resource-orders.csv
-OUTPUT_XLSX=delegation_summary.xlsx
-```
+- `--summary-only`: do not print each transfer record; only print the daily summary.
+- `--xlsx [PATH]`:
+  - if `PATH` is provided, write the Excel report to that path
+  - if `PATH` is omitted, use `XLSX_PATH` from `.env` (or a local default filename)
+- `--days N`: override `RANGE_DAYS` from `.env` for this run.
+- `--include-today`: include today (Beijing date) in the output (default is excluded).
 
-Priority order:
-1. CLI arguments
-2. `.env` values
-3. Built-in defaults
-
-## Run
-
-From the project directory:
+Examples:
 
 ```bash
-cargo run --bin delegation_summary_xlsx
-```
+# Use .env (recommended)
+cargo run -- --summary-only --xlsx
 
-Override input/output via CLI:
+# Override the day range for a single run
+cargo run -- --summary-only --xlsx --days 60
 
-```bash
-cargo run --bin delegation_summary_xlsx -- /path/to/resource-orders.csv /path/to/output.xlsx
+# Write to a custom path (overrides .env)
+cargo run -- --summary-only --xlsx /tmp/transfer_daily_summary.xlsx
+
+# Include today if you want the partial-day data
+cargo run -- --summary-only --xlsx --include-today
 ```
 
 ## Output
 
-The generated workbook contains a sheet named `汇总` with columns:
-- 派发时间
-- 有U能量笔数
-- 无U能量笔数
-- 每日转账次数
+The generated Excel file contains:
 
-And a last row `总计` with SUM formulas for each numeric column.
+- Worksheet: `汇总`
+- Columns:
+  - `日期(BJT)` (Beijing date)
+  - `转账次数` (transfer count)
+- Column chart:
+  - Type: Column
+  - Color: dark blue (`#1F4E79`)
+  - Title: `每日转账次数（北京时间）`
 
-## Notes (macOS)
+## Notes
 
-If you set `OUTPUT_XLSX` to write into protected folders (e.g. Desktop/Documents) and get `PermissionDenied`, grant your terminal app permission in:
-System Settings → Privacy & Security → Files and Folders.
+- Timestamp parsing supports:
+  - `YYYY-MM-DD HH:MM:SS`
+  - `YYYY-MM-DD HH:MM`
+- If you pipe output to tools like `head`, the program exits cleanly (handles broken pipe).
 
