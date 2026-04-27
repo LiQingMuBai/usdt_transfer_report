@@ -21,10 +21,10 @@ The tool expects a CSV file with headers like:
 
 ```bash
 cd /Users/masion/monitor/print_transfer_report
-cargo run -- --summary-only --xlsx
+cargo run -- --summary-only
 ```
 
-This reads configuration from `.env` (see below), prints the daily summary to stdout, and writes the Excel report to the configured output path.
+This reads configuration from `.env` (see below), prints the daily summary to stdout, and writes the Excel report to the configured output path (via `XLSX_PATH`).
 
 ## Configuration (.env)
 
@@ -57,6 +57,7 @@ RANGE_DAYS=40
 - `--xlsx [PATH]`:
   - if `PATH` is provided, write the Excel report to that path
   - if `PATH` is omitted, use `XLSX_PATH` from `.env` (or a local default filename)
+- `--no-xlsx`: disable Excel output for this run.
 - `--days N`: override `RANGE_DAYS` from `.env` for this run.
 - `--include-today`: include today (Beijing date) in the output (default is excluded).
 
@@ -64,16 +65,19 @@ Examples:
 
 ```bash
 # Use .env (recommended)
-cargo run -- --summary-only --xlsx
+cargo run -- --summary-only
 
 # Override the day range for a single run
-cargo run -- --summary-only --xlsx --days 60
+cargo run -- --summary-only --days 60
 
 # Write to a custom path (overrides .env)
 cargo run -- --summary-only --xlsx /tmp/transfer_daily_summary.xlsx
 
 # Include today if you want the partial-day data
-cargo run -- --summary-only --xlsx --include-today
+cargo run -- --summary-only --include-today
+
+# No Excel output
+cargo run -- --summary-only --no-xlsx
 ```
 
 ## Output
@@ -95,4 +99,3 @@ The generated Excel file contains:
   - `YYYY-MM-DD HH:MM:SS`
   - `YYYY-MM-DD HH:MM`
 - If you pipe output to tools like `head`, the program exits cleanly (handles broken pipe).
-
