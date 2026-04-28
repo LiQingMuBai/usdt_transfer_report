@@ -1,0 +1,31 @@
+port: 7890
+socks-port: 7891
+allow-lan: false
+mode: rule
+log-level: info
+proxies:
+  - name: "vless-reality"
+    type: vless
+    server: 47.242.6.222
+    port: 21074
+    uuid: 8093065e-fd1c-466b-bd31-95070abefbb5
+    network: xhttp
+    tls: true
+    udp: true
+    servername: www.amazon.com
+    reality-opts:
+      public-key: UdPmHYj_8kbYs-4CeQ5FH-4Ilzcmz2-zdHK0XAmx7H8
+      short-id: 824e0cddc0
+    client-fingerprint: chrome
+    xhttp-opts:
+      path: "/"
+      method: "POST"
+proxy-groups:
+  - name: "PROXY"
+    type: select
+    proxies:
+      - "vless-reality"
+      - DIRECT
+rules:
+  - GEOIP,CN,DIRECT
+  - MATCH,PROXY
